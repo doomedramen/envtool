@@ -1,5 +1,10 @@
 package main
 
+//TODO
+// check the OS
+// add ability to give path to (in/out) file
+// 
+
 import (
 	"encoding/json"
 	"fmt"
