@@ -1,22 +1,20 @@
 package main
 
-//TODO
-// check the OS
-// add ability to give path to (in/out) file
-// 
-
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 )
 
 var (
 	importOption  bool
 	exportOption  bool
-	verboseOption bool
+	verboseOption = false
+	pwd           string
 )
 
 const (
@@ -29,24 +27,55 @@ type envObj struct {
 }
 
 func main() {
+	//set default path
+	tmpPwd, err := os.Getwd()
+	check(err)
+	pwd = tmpPwd
 
-	argsWithoutProg := os.Args[1:]
+	processArgs()
 
-	for _, element := range argsWithoutProg {
+	if importOption {
+		//check full path exists
+		pwd = path.Join(pwd, fileName)
+		checkForFile()
 
-		if strings.Contains(element, "verbose") {
-			verboseOption = true
-		}
+		importer()
+	} else if exportOption {
+		//check folder exists
+		checkForFile()
+		pwd = path.Join(pwd, fileName)
 
-		if strings.Contains(element, "import") {
-			importOption = true
-			importer()
-		} else if strings.Contains(element, "export") {
-			exportOption = true
-			exporter()
-		}
-
+		exporter()
 	}
+}
+
+func processArgs() {
+
+	verboseFlag := flag.Bool("verbose", false, "prints more output")
+	importFlag := flag.Bool("import", false, "import env")
+	exportFlag := flag.Bool("export", false, "export env")
+	folder := flag.String("path", "", "[optional] path to ENV.env file")
+
+	flag.Parse()
+
+	if *verboseFlag {
+		verboseOption = *verboseFlag
+	}
+	if *importFlag {
+		importOption = *importFlag
+	} else if *exportFlag {
+		exportOption = *exportFlag
+	}
+
+	if flag.NFlag() < 1 {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	if *folder != "" {
+		pwd = *folder
+	}
+
 }
 
 func check(e error) {
@@ -55,19 +84,32 @@ func check(e error) {
 	}
 }
 
+func checkForFile() {
+	if verboseOption {
+		fmt.Println("using", pwd, "for file location")
+	}
+
+	if _, err := os.Stat(pwd); os.IsNotExist(err) {
+		fmt.Println("no such file or directory", pwd)
+		os.Exit(1)
+	}
+}
+
 func exporter() {
 
 	envs := getEnv()
 	mapB, _ := json.Marshal(envs)
 
-	err := ioutil.WriteFile(fileName, mapB, 0644)
+	err := ioutil.WriteFile(pwd, mapB, 0644)
 	check(err)
+
+	fmt.Println("exported", len(envs), "variables to", pwd)
 
 }
 
 func importer() {
 
-	filebyte, err := ioutil.ReadFile(fileName)
+	filebyte, err := ioutil.ReadFile(pwd)
 	check(err)
 
 	// var deps []envObj
@@ -75,8 +117,6 @@ func importer() {
 	var dat map[string]interface{}
 	err = json.Unmarshal(filebyte, &dat)
 	check(err)
-
-	fmt.Println("importing", len(dat), "variables")
 
 	for k, v := range dat {
 
@@ -92,7 +132,7 @@ func importer() {
 		}
 
 	}
-	fmt.Println("DONE")
+	fmt.Println("imported", len(dat), "variables to", pwd)
 }
 
 func getEnv() map[string]string {
