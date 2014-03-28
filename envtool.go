@@ -54,7 +54,7 @@ func processArgs() {
 	verboseFlag := flag.Bool("verbose", false, "prints more output")
 	importFlag := flag.Bool("import", false, "import env")
 	exportFlag := flag.Bool("export", false, "export env")
-	folder := flag.String("path", "", "[optional] path to ENV.env file")
+	folder := flag.String("path", "", "path to folder containing ENV.env file")
 
 	flag.Parse()
 
