@@ -1,8 +1,7 @@
 ENV Tool
 ===
 
-A tool for exporting and importing your linux enviroment
-
+A tool for exporting and importing your linux enviroment.
 Usage
 -----
 
